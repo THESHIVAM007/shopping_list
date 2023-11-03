@@ -1,7 +1,11 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+
 import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/category.dart';
-import 'package:shopping_list/models/grocery_item.dart';
+// import 'package:shopping_list/models/grocery_item.dart';
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -16,15 +20,35 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
-  void _saveItem() {
+  void _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      Navigator.of(context).pop(GroceryItem(
-          id: DateTime.now().toString(),
-          name: _enteredName,
-          quantity: _enteredQuantity,
-          category: _selectedCategory));
+      final url = Uri.https('flutter-prep-4f80b-default-rtdb.firebaseio.com',
+          'shopping-list.json');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(
+          {
+            'name': _enteredName,
+            'quantity': _enteredQuantity,
+            'category': _selectedCategory.title
+          },
+        ),
+      );
+      print(response.body);
+
+      if (!context.mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+
+      // Navigator.of(context).pop(GroceryItem(
+      //   id: DateTime.now().toString(),
+      // ));
     }
   }
 
@@ -32,10 +56,10 @@ class _NewItemState extends State<NewItem> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:  const Text('Add Your Item'),
+        title: const Text('Add Your Item'),
       ),
       body: Padding(
-        padding:  const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -43,7 +67,7 @@ class _NewItemState extends State<NewItem> {
               TextFormField(
                 initialValue: _enteredName,
                 maxLength: 50,
-                decoration:  const InputDecoration(
+                decoration: const InputDecoration(
                   label: Text('Name'),
                 ),
                 validator: (value) {
